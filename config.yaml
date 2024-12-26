@@ -3,12 +3,44 @@ api:
   port: 8000
   debug: true
 
-model:
-  name: "gpt-4o-mini"
-  max_tokens: 2048
+providers:
+  default: "openai"  # Which provider to use by default
+  
+  openai:
+    enabled: true
+    models:
+      default: "gpt-4-turbo-preview"
+      allowed:
+        - "gpt-4-turbo-preview"
+        - "gpt-4"
+        - "gpt-3.5-turbo"
+    max_tokens: 2048
+    
+  anthropic:
+    enabled: true
+    models:
+      default: "claude-3-opus-20240229"
+      allowed:
+        - "claude-3-opus-20240229"
+        - "claude-3-sonnet-20240229"
+        - "claude-2.1"
+    max_tokens: 2048
+    
+  ollama:
+    enabled: true
+    host: "http://localhost:11434"
+    models:
+      default: "llama2"
+      allowed:
+        - "llama2"
+        - "mistral"
+        - "mixtral"
+    max_tokens: 2048
 
 search:
-  results_per_query: 10
+  google:
+    enabled: true
+    results_per_query: 10
 
 logging:
   version: 1

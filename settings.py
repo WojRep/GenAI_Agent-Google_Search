@@ -1,27 +1,38 @@
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel
 from functools import lru_cache
+from typing import Dict, Any, Optional
+import yaml
 from dotenv import load_dotenv
 import os
+from credentials import get_credentials_manager
 
 # Load .env file
 load_dotenv()
 
-class Settings(BaseSettings):
-    API_KEY_NAME: str = os.getenv("API_KEY_NAME", "X-Auth-Token")
-    API_KEY: str = os.getenv("API_KEY")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
-    GOOGLE_CSE_KEY: str = os.getenv("GOOGLE_CSE_KEY")
-    GOOGLE_CSE_ID: str = os.getenv("GOOGLE_CSE_ID")
-    MODEL: str = os.getenv("MODEL", "gpt-4o-mini")
-    MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "2048"))
-
+class Settings(BaseModel):
+    """Application settings"""
+    # API Settings
+    api_key_name: str = os.getenv("API_KEY_NAME", "X-Auth-Token")
+    api_key: str = os.getenv("API_KEY", "")
+    
     class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+        validate_assignment = True
+
+@lru_cache()
+def load_yaml_config() -> Dict[str, Any]:
+    """Load YAML configuration"""
+    try:
+        with open('config.yaml', 'r') as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError:
+        return {}
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get application settings"""
     return Settings()
 
-# Usage in your main code:
+# Initialize settings, config and credentials manager
 settings = get_settings()
+config = load_yaml_config()
+credentials_manager = get_credentials_manager()
