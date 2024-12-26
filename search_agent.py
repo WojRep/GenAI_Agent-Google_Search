@@ -20,18 +20,15 @@ import json
 from typing import List, Optional
 import asyncio
 from search_optimizer import get_optimized_queries
-
-# Import secrets
-sys.path.append('/Users/wrepinski/Github/ElephantAI - Agenci AI/')
-from wr_secrets import UserSecrets
-userdata = UserSecrets()
+from settings import get_settings 
 
 # Load configuration
 def load_config() -> Dict[str, Any]:
-    with open('search_agent.yaml', 'r') as file:
+    with open('config.yaml', 'r') as file:
         return yaml.safe_load(file)
 
 config = load_config()
+settings = get_settings() 
 
 # Setup logging
 class SessionFilter(logging.Filter):
@@ -50,18 +47,6 @@ logger = logging.getLogger('search_agent')
 
 app = FastAPI(title="Search Agent API")
 
-# Configuration
-class Settings:
-    API_KEY_NAME = "X-Auth-Token"
-    API_KEY = userdata.get("auth_token")
-    OPENAI_API_KEY = userdata.get("openaivision")
-    GOOGLE_CSE_KEY = userdata.get("google_cse")
-    GOOGLE_CSE_ID = userdata.get("cse_id")
-    MODEL = config['model']['name']
-    MAX_TOKENS = config['model']['max_tokens']
-
-settings = Settings()
-
 # Security
 api_key_header = APIKeyHeader(name=settings.API_KEY_NAME)
 
@@ -74,14 +59,6 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
         )
     return api_key_header
 
-# Request/Response Models
-class SearchRequest(BaseModel):
-    question: str
-
-class SearchResponse(BaseModel):
-    answer: str
-    session_id: str
-
 # OpenAI client initialization
 @lru_cache()
 def get_openai_client():
@@ -91,6 +68,16 @@ def get_openai_client():
 @lru_cache()
 def get_search_client():
     return build("customsearch", "v1", developerKey=settings.GOOGLE_CSE_KEY)
+
+
+# Request/Response Models
+class SearchRequest(BaseModel):
+    question: str
+
+class SearchResponse(BaseModel):
+    answer: str
+    session_id: str
+
 
 
 async def search(search_term: str) -> str:
