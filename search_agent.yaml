@@ -1,0 +1,57 @@
+api:
+  host: "0.0.0.0"
+  port: 8000
+  debug: true
+
+model:
+  name: "gpt-4o-mini"
+  max_tokens: 2048
+
+search:
+  results_per_query: 10
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+  
+  formatters:
+    detailed:
+      format: "%(asctime)s.%(msecs)03d|%(session_id)s|%(filename)s:%(lineno)d|%(levelname)s|%(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  filters:
+    session_filter:
+      (): logging_config.SessionFilter
+  
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      formatter: detailed
+      filters: [session_filter]
+      stream: ext://sys.stdout
+    
+    file:
+      class: logging.handlers.RotatingFileHandler
+      level: DEBUG
+      formatter: detailed
+      filters: [session_filter]
+      filename: logs/search_agent.log
+      maxBytes: 10485760  # 10MB
+      backupCount: 5
+      encoding: utf8
+  
+  loggers:
+    search_agent:
+      level: DEBUG
+      handlers: [console, file]
+      propagate: false
+    
+    uvicorn:
+      level: INFO
+      handlers: [console, file]
+      propagate: false
+  
+  root:
+    level: DEBUG
+    handlers: [console, file]
