@@ -13,6 +13,7 @@ import os
 from settings import settings, config, credentials_manager
 from providers import get_ai_provider, get_available_providers
 from search_optimizer import get_optimized_queries
+from agent import Agent, AgentAction
 
 # Create logs directory if it doesn't exist
 os.makedirs('logs', exist_ok=True)
@@ -48,8 +49,6 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
         )
     return api_key_header
 
-
-
 class SearchRequest(BaseModel):
     question: str
     provider: Optional[str] = None
@@ -67,54 +66,71 @@ def get_search_client():
     return build("customsearch", "v1", developerKey=creds['cse_key'])
 
 async def search(search_term: str) -> str:
-    logger.debug(f"Starting search for term: {search_term}")
+    logger.debug(f"Search: Starting search for term: {search_term}")
     try:
         service = get_search_client()
         optimized_queries = get_optimized_queries(search_term)
         
-        logger.debug(f"Optimized queries generated: {json.dumps(optimized_queries, indent=2)}")
+        logger.debug(f"Search: Optimized queries generated: {json.dumps(optimized_queries, indent=2)}")
         
         all_results = []
         
         async def execute_single_search(query: str) -> List[str]:
-            creds = credentials_manager.get_credentials('google')
-            search_params = {
-                'q': query,
-                'cx': creds['cse_id'],
-                'num': config.get('search', {}).get('google', {}).get('results_per_query', 10)
-            }
-            
-            logger.debug(f"Executing Google search with parameters: {json.dumps(search_params, indent=2)}")
-            
-            loop = asyncio.get_event_loop()
-            res = await loop.run_in_executor(
-                None,
-                lambda: service.cse().list(**search_params).execute()
-            )
-            
-            logger.debug(f"Raw Google search results: {json.dumps(res, indent=2)}")
-            
-            snippets = [result.get('snippet', '') for result in res.get('items', [])]
-            logger.debug(f"Extracted snippets: {json.dumps(snippets, indent=2)}")
-            
-            return snippets
+            try:
+                creds = credentials_manager.get_credentials('google')
+                search_params = {
+                    'q': query,
+                    'cx': creds['cse_id'],
+                    'num': config.get('search', {}).get('google', {}).get('results_per_query', 10)
+                }
+                
+                logger.debug(f"Search: Executing Google search with parameters: {json.dumps(search_params, indent=2)}")
+                
+                loop = asyncio.get_event_loop()
+                res = await loop.run_in_executor(
+                    None,
+                    lambda: service.cse().list(**search_params).execute()
+                )
+                
+                logger.debug(f"Search: Raw Google search results: {json.dumps(res, indent=2)}")
+                
+                snippets = [result.get('snippet', '') for result in res.get('items', [])]
+                logger.debug(f"Search: Extracted snippets: {json.dumps(snippets, indent=2)}")
+                
+                return snippets
+            except Exception as e:
+                if 'rateLimitExceeded' in str(e) or '429' in str(e):
+                    logger.warning("Google Search quota exceeded, returning empty results")
+                    return []
+                raise  # Przekazujemy dalej inne błędy
 
         # Execute keyword search
         logger.info(f"Executing keyword search with query: {optimized_queries['keyword_query']}")
-        keyword_results = await execute_single_search(optimized_queries["keyword_query"])
-        all_results.extend(keyword_results)
-        
+        try:
+            keyword_results = await execute_single_search(optimized_queries["keyword_query"])
+            all_results.extend(keyword_results)
+        except Exception as e:
+            if 'rateLimitExceeded' not in str(e) and '429' not in str(e):
+                raise
+
         # Execute context searches
         for query in optimized_queries["context_queries"]:
-            logger.info(f"Executing context search with query: {query}")
-            context_results = await execute_single_search(query)
-            all_results.extend(context_results)
+            try:
+                logger.info(f"Executing context search with query: {query}")
+                context_results = await execute_single_search(query)
+                all_results.extend(context_results)
+            except Exception as e:
+                if 'rateLimitExceeded' not in str(e) and '429' not in str(e):
+                    raise
         
+        if not all_results:
+            return "I apologize, but I am currently unable to search for additional information. The search service has reached its daily query limit. Please try again later or provide more context in your question."
+            
         unique_results = list(dict.fromkeys(all_results))
         final_results = "\n".join(unique_results)
         logger.debug(f"Final combined search results: {json.dumps(final_results, indent=2)}")
         
-        return final_results if final_results else "No results found"
+        return final_results
         
     except Exception as e:
         logger.error(f"Search error: {str(e)}", exc_info=True)
@@ -130,30 +146,21 @@ async def search_endpoint(
     logger.info(f"Search question: {request.question}")
     
     try:
-        # Get the AI provider
-        provider = get_ai_provider(request.provider)
+        # Initialize agent
+        agent = Agent(request.provider, request.model)
         provider_name = request.provider or config.get('providers', {}).get('default', 'openai')
         
         logger.info(f"Using AI provider: {provider_name}")
         
-        # Perform search
-        logger.info("Initiating search...")
-        search_results = await search(request.question)
+        # Process question using agent
+        answer = await agent.process_question(request.question, search)
         
-        # Generate answer using selected provider
-        logger.info(f"Generating answer with {provider_name}")
-        answer, model_used = await provider.generate_answer(
-            request.question, 
-            [search_results],
-            model=request.model
-        )
-        
-        logger.info(f"Request completed successfully using model: {model_used}")
+        logger.info(f"Request completed successfully using model: {agent.model or agent.provider.get_model()}")
         return SearchResponse(
             answer=answer,
             session_id=current_session_id,
             provider=provider_name,
-            model=model_used
+            model=agent.model or agent.provider.get_model()
         )
         
     except Exception as e:

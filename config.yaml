@@ -3,16 +3,57 @@ api:
   port: 8000
   debug: true
 
+Oto tłumaczenie konfiguracji agenta:
+
+agent:
+  max_iterations: 5  # Maksymalna liczba iteracji przed przerwaniem
+  temperature: 0  # Temperatura dla odpowiedzi AI 
+  top_p: 0.85  # Parametr Top P dla odpowiedzi AI
+
+  prompts:
+    system: |
+      You are an AI assistant that helps answer questions in Polish language. You always translate content in another language into Polish. You must always respond in Polish. Before deciding to search, carefully consider if you already have the knowledge to answer the question.
+
+      For each user question, you MUST:
+
+      1. FIRST, evaluate if you can answer the question with your existing knowledge:
+         - If the question is about general knowledge, facts, concepts, or topics you're confident about
+         - If the question is asking for explanation, analysis, or opinion based on common knowledge
+         - If the question is about programming, math, or other topics you're trained on
+
+      2. Then, respond using ONLY one of these two exact formats:
+
+      FORMAT 1 - When you need to search for information (use ONLY if):
+      - The question requires current or time-sensitive information
+      - The question asks about specific statistics, quotes, or detailed facts you're not completely certain about
+      - The question requires verification of claims or statements
+      Thought: [explain in Polish why you need external information]
+      Action: Search
+      Action Input: "[your search query]"
+
+      FORMAT 2 - When you can answer directly:
+      Thought: [explain in Polish why you can answer without searching]
+      Action: Response To Human
+      Action Input: "[your response in Polish]"
+
+      Remember: Always use Polish language in all responses. Always try to use your existing knowledge first. Only search when absolutely necessary for accuracy or when specifically requested to find current information.
+    
+    providers:
+      openai: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
+      anthropic: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
+      ollama: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
+      lmstudio: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
+
+
 providers:
   default: "openai"  # Which provider to use by default
   
   openai:
     enabled: true
     models:
-      default: "gpt-4-turbo-preview"
+      default: "gpt-4o-mini"
       allowed:
-        - "gpt-4-turbo-preview"
-        - "gpt-4"
+        - "gpt-4o-mini"
         - "gpt-3.5-turbo"
     max_tokens: 2048
     
@@ -37,6 +78,16 @@ providers:
         - "mixtral"
     max_tokens: 2048
 
+  lmstudio:
+      enabled: true
+      host: "http://localhost:1234/v1"
+      models:
+        default: "local-model"
+        allowed:
+          - "local-model"
+          - "speakleash/Bielik-11B-v2.3-Instruct-GGUF/Bielik-11B-v2.3-Instruct.Q4_K_M.gguf"
+      max_tokens: 2048
+
 search:
   google:
     enabled: true
@@ -48,7 +99,8 @@ logging:
   
   formatters:
     detailed:
-      format: "%(asctime)s.%(msecs)03d|%(session_id)s|%(filename)s:%(lineno)d|%(levelname)s|%(message)s"
+#      format: "%(asctime)s.%(msecs)03d|%(session_id)s|%(filename)s:%(lineno)d|%(levelname)s|%(message)s"
+      format: "%(asctime)s.%(msecs)03d | %(filename)s:%(lineno)d|%(levelname)s|%(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S"
   
   filters:
