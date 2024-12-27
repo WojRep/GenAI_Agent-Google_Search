@@ -59,8 +59,7 @@ class OpenAIProvider(AIProvider):
         combined_results = "\n".join(search_results)
         full_prompt = f"Question: {prompt}\n\nSearch Results:\n{combined_results}\n\nPlease provide a comprehensive answer based on the search results."
         
-        # Log the full prompt being sent to the model
-        logger.debug(f"OpenAI - Full prompt being sent: {full_prompt}")
+        logger.debug("OpenAI - Full prompt being sent: %s", full_prompt)
         
         try:
             request_data = {
@@ -72,22 +71,19 @@ class OpenAIProvider(AIProvider):
                 "max_tokens": self.config['max_tokens']
             }
             
-            # Log the full request data
-            logger.debug(f"OpenAI - Request data: {json.dumps(request_data, indent=2)}")
+            logger.debug("OpenAI - Request data: %s", json.dumps(request_data, indent=2))
             
             response = await self.client.chat.completions.create(**request_data)
             
-            # Log the full API response
-            logger.debug(f"OpenAI - Full API response: {response.model_dump_json()}")
+            logger.debug("OpenAI - Full API response: %s", response.model_dump_json())
             
             response_content = response.choices[0].message.content.strip()
-            logger.debug(f"OpenAI - Final response content: {response_content}")
+            logger.debug("OpenAI - Final response content: %s", response_content)
             
             return response_content, selected_model
             
         except Exception as e:
-            logger.error(f"OpenAI error: {str(e)}")
-            # Log the full exception details
+            logger.error("OpenAI error: %s", str(e))
             logger.debug("OpenAI - Full exception details:", exc_info=True)
             raise
 
@@ -116,38 +112,34 @@ class AnthropicProvider(AIProvider):
         combined_results = "\n".join(search_results)
         full_prompt = f"Question: {prompt}\n\nSearch Results:\n{combined_results}\n\nPlease provide a comprehensive answer based on the search results."
         
-        # Log the full prompt being sent to the model
-        logger.debug(f"Anthropic - Full prompt being sent: {full_prompt}")
+        logger.debug("Anthropic - Full prompt being sent: %s", full_prompt)
         
         try:
             request_data = {
                 "model": selected_model,
                 "max_tokens": self.config['max_tokens'],
-            "messages": [{
-                "role": "system",
-                "content": config['agent']['prompts']['providers']['anthropic']
-            }, {
-                "role": "user",
-                "content": full_prompt
-            }]
+                "messages": [{
+                    "role": "system",
+                    "content": config['agent']['prompts']['providers']['anthropic']
+                }, {
+                    "role": "user", 
+                    "content": full_prompt
+                }]
             }
             
-            # Log the full request data
-            logger.debug(f"Anthropic - Request data: {json.dumps(request_data, indent=2)}")
+            logger.debug("Anthropic - Request data: %s", json.dumps(request_data, indent=2))
             
             response = await self.client.messages.create(**request_data)
             
-            # Log the full API response
-            logger.debug(f"Anthropic - Full API response: {response.model_dump_json()}")
+            logger.debug("Anthropic - Full API response: %s", response.model_dump_json())
             
             response_content = response.content[0].text
-            logger.debug(f"Anthropic - Final response content: {response_content}")
+            logger.debug("Anthropic - Final response content: %s", response_content)
             
             return response_content, selected_model
             
         except Exception as e:
-            logger.error(f"Anthropic error: {str(e)}")
-            # Log the full exception details
+            logger.error("Anthropic error: %s", str(e))
             logger.debug("Anthropic - Full exception details:", exc_info=True)
             raise
 
@@ -155,7 +147,7 @@ class OllamaProvider(AIProvider):
     def __init__(self):
         creds = credentials_manager.get_credentials('ollama')
         self.base_url = creds.get('host', 'http://localhost:11434')
-        self.api_key = creds.get('api_key', '')  # Optional for Ollama
+        self.api_key = creds.get('api_key', '')
         self.config = config['providers']['ollama']
     
     @property
@@ -175,8 +167,7 @@ class OllamaProvider(AIProvider):
         combined_results = "\n".join(search_results)
         full_prompt = f"Question: {prompt}\n\nSearch Results:\n{combined_results}\n\nPlease provide a comprehensive answer based on the search results."
         
-        # Log the full prompt being sent to the model
-        logger.debug(f"Ollama - Full prompt being sent: {full_prompt}")
+        logger.debug("Ollama - Full prompt being sent: %s", full_prompt)
         
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         
@@ -191,8 +182,7 @@ class OllamaProvider(AIProvider):
                     }
                 }
                 
-                # Log the full request data
-                logger.debug(f"Ollama - Request data: {json.dumps(request_data, indent=2)}")
+                logger.debug("Ollama - Request data: %s", json.dumps(request_data, indent=2))
                 
                 async with session.post(
                     f"{self.base_url}/api/generate",
@@ -200,23 +190,20 @@ class OllamaProvider(AIProvider):
                     headers=headers
                 ) as response:
                     if response.status != 200:
-                        # Log the error response
                         error_body = await response.text()
-                        logger.debug(f"Ollama - Error response (status {response.status}): {error_body}")
+                        logger.debug("Ollama - Error response (status %s): %s", response.status, error_body)
                         raise Exception(f"Ollama request failed with status {response.status}")
                     
                     result = await response.json()
-                    # Log the full API response
-                    logger.debug(f"Ollama - Full API response: {json.dumps(result, indent=2)}")
+                    logger.debug("Ollama - Full API response: %s", json.dumps(result, indent=2))
                     
                     response_content = result['response']
-                    logger.debug(f"Ollama - Final response content: {response_content}")
+                    logger.debug("Ollama - Final response content: %s", response_content)
                     
                     return response_content, selected_model
                     
             except Exception as e:
-                logger.error(f"Ollama error: {str(e)}")
-                # Log the full exception details
+                logger.error("Ollama error: %s", str(e))
                 logger.debug("Ollama - Full exception details:", exc_info=True)
                 raise
 
@@ -224,7 +211,7 @@ class LMStudioProvider(AIProvider):
     def __init__(self):
         creds = credentials_manager.get_credentials('lmstudio')
         self.base_url = creds.get('host', 'http://localhost:1234/v1')
-        self.api_key = creds.get('api_key', '')  # Optional for LM Studio
+        self.api_key = creds.get('api_key', '')
         self.config = config['providers']['lmstudio']
     
     @property
@@ -244,8 +231,7 @@ class LMStudioProvider(AIProvider):
         combined_results = "\n".join(search_results)
         full_prompt = f"Question: {prompt}\n\nSearch Results:\n{combined_results}\n\nPlease provide a comprehensive answer based on the search results."
         
-        # Log the full prompt being sent to the model
-        logger.debug(f"LMStudio - Full prompt being sent: {full_prompt}")
+        logger.debug("LMStudio - Full prompt being sent: %s", full_prompt)
         
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         
@@ -262,8 +248,7 @@ class LMStudioProvider(AIProvider):
                     "top_p": config['agent']['top_p']
                 }
                 
-                # Log the full request data
-                logger.debug(f"LMStudio - Request data: {json.dumps(request_data, indent=2)}")
+                logger.debug("LMStudio - Request data: %s", json.dumps(request_data, indent=2))
                 
                 async with session.post(
                     f"{self.base_url}/chat/completions",
@@ -271,28 +256,24 @@ class LMStudioProvider(AIProvider):
                     headers=headers
                 ) as response:
                     if response.status != 200:
-                        # Log the error response
                         error_body = await response.text()
-                        logger.debug(f"LMStudio - Error response (status {response.status}): {error_body}")
+                        logger.debug("LMStudio - Error response (status %s): %s", response.status, error_body)
                         raise Exception(f"LM Studio request failed with status {response.status}")
                     
                     result = await response.json()
-                    # Log the full API response
-                    logger.debug(f"LMStudio - Full API response: {json.dumps(result, indent=2)}")
+                    logger.debug("LMStudio - Full API response: %s", json.dumps(result, indent=2))
                     
                     response_content = result['choices'][0]['message']['content']
-                    logger.debug(f"LMStudio - Final response content: {response_content}")
+                    logger.debug("LMStudio - Final response content: %s", response_content)
                     
                     return response_content, selected_model
                     
             except Exception as e:
-                logger.error(f"LM Studio error: {str(e)}")
-                # Log the full exception details
+                logger.error("LM Studio error: %s", str(e))
                 logger.debug("LMStudio - Full exception details:", exc_info=True)
                 raise
 
 def get_ai_provider(provider_name: Optional[str] = None) -> AIProvider:
-    """Get AI provider instance with validation"""
     if provider_name is None:
         provider_name = config['providers']['default']
     
@@ -317,7 +298,6 @@ def get_ai_provider(provider_name: Optional[str] = None) -> AIProvider:
     return provider
 
 def get_provider_models(provider_name: str) -> List[str]:
-    """Get list of available models for a provider"""
     try:
         provider = get_ai_provider(provider_name)
         return provider.available_models
@@ -325,7 +305,6 @@ def get_provider_models(provider_name: str) -> List[str]:
         return []
 
 def get_available_providers() -> Dict[str, Dict[str, Any]]:
-    """Get list of all configured providers with their models and availability status"""
     results = {}
     for provider_name in config['providers'].keys():
         if provider_name != 'default':
