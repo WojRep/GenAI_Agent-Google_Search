@@ -94,3 +94,8 @@ OLLAMA_API_KEY=
 GOOGLE_CSE_KEY=
 GOOGLE_CSE_ID=
 ```
+
+
+## Optymalizacja wyszukiwania
+
+![Diagram optymalizacji wyszukiwania](docs/images/diagram_optymalizacji_wyszukiwania.png)
