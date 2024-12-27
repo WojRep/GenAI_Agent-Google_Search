@@ -7,7 +7,7 @@ Oto tłumaczenie konfiguracji agenta:
 
 agent:
   max_iterations: 5  # Maksymalna liczba iteracji przed przerwaniem
-  temperature: 0  # Temperatura dla odpowiedzi AI 
+  temperature: 0  # Temperatura dla odpowiedzi AI
   top_p: 0.85  # Parametr Top P dla odpowiedzi AI
 
   prompts:
@@ -37,7 +37,7 @@ agent:
       Action Input: "[your response in Polish]"
 
       Remember: Always use Polish language in all responses. Always try to use your existing knowledge first. Only search when absolutely necessary for accuracy or when specifically requested to find current information.
-    
+
     providers:
       openai: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
       anthropic: "You are a helpful assistant that provides comprehensive answers based on search results. Always respond in Polish language. You always translate content in another language into Polish. You must always respond in Polish."
@@ -47,7 +47,7 @@ agent:
 
 providers:
   default: "openai"  # Which provider to use by default
-  
+
   openai:
     enabled: true
     models:
@@ -56,7 +56,7 @@ providers:
         - "gpt-4o-mini"
         - "gpt-3.5-turbo"
     max_tokens: 2048
-    
+
   anthropic:
     enabled: true
     models:
@@ -66,7 +66,7 @@ providers:
         - "claude-3-sonnet-20240229"
         - "claude-2.1"
     max_tokens: 2048
-    
+
   ollama:
     enabled: true
     host: "http://localhost:11434"
@@ -96,17 +96,17 @@ search:
 logging:
   version: 1
   disable_existing_loggers: false
-  
+
   formatters:
     detailed:
 #      format: "%(asctime)s.%(msecs)03d|%(session_id)s|%(filename)s:%(lineno)d|%(levelname)s|%(message)s"
       format: "%(asctime)s.%(msecs)03d | %(filename)s:%(lineno)d|%(levelname)s|%(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S"
-  
+
   filters:
     session_filter:
       (): logging_config.SessionFilter
-  
+
   handlers:
     console:
       class: logging.StreamHandler
@@ -114,7 +114,7 @@ logging:
       formatter: detailed
       filters: [session_filter]
       stream: ext://sys.stdout
-    
+
     file:
       class: logging.handlers.RotatingFileHandler
       level: DEBUG
@@ -124,18 +124,18 @@ logging:
       maxBytes: 10485760  # 10MB
       backupCount: 5
       encoding: utf8
-  
+
   loggers:
     search_agent:
       level: DEBUG
       handlers: [console, file]
       propagate: false
-    
+
     uvicorn:
       level: INFO
       handlers: [console, file]
       propagate: false
-  
+
   root:
     level: DEBUG
     handlers: [console, file]

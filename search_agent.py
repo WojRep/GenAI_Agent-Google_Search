@@ -70,11 +70,11 @@ async def search(search_term: str) -> str:
     try:
         service = get_search_client()
         optimized_queries = get_optimized_queries(search_term)
-        
+
         logger.debug(f"Search: Optimized queries generated: {json.dumps(optimized_queries, indent=2)}")
-        
+
         all_results = []
-        
+
         async def execute_single_search(query: str) -> List[str]:
             try:
                 creds = credentials_manager.get_credentials('google')
@@ -83,20 +83,20 @@ async def search(search_term: str) -> str:
                     'cx': creds['cse_id'],
                     'num': config.get('search', {}).get('google', {}).get('results_per_query', 10)
                 }
-                
+
                 logger.debug(f"Search: Executing Google search with parameters: {json.dumps(search_params, indent=2)}")
-                
+
                 loop = asyncio.get_event_loop()
                 res = await loop.run_in_executor(
                     None,
                     lambda: service.cse().list(**search_params).execute()
                 )
-                
+
                 logger.debug(f"Search: Raw Google search results: {json.dumps(res, indent=2)}")
-                
+
                 snippets = [result.get('snippet', '') for result in res.get('items', [])]
                 logger.debug(f"Search: Extracted snippets: {json.dumps(snippets, indent=2)}")
-                
+
                 return snippets
             except Exception as e:
                 if 'rateLimitExceeded' in str(e) or '429' in str(e):
@@ -122,16 +122,16 @@ async def search(search_term: str) -> str:
             except Exception as e:
                 if 'rateLimitExceeded' not in str(e) and '429' not in str(e):
                     raise
-        
+
         if not all_results:
             return "I apologize, but I am currently unable to search for additional information. The search service has reached its daily query limit. Please try again later or provide more context in your question."
-            
+
         unique_results = list(dict.fromkeys(all_results))
         final_results = "\n".join(unique_results)
         logger.debug(f"Final combined search results: {json.dumps(final_results, indent=2)}")
-        
+
         return final_results
-        
+
     except Exception as e:
         logger.error(f"Search error: {str(e)}", exc_info=True)
         return f"Error during search: {str(e)}"
@@ -144,17 +144,17 @@ async def search_endpoint(
     current_session_id = session_id.get()
     logger.info(f"Starting new search request - Session ID: {current_session_id}")
     logger.info(f"Search question: {request.question}")
-    
+
     try:
         # Initialize agent
         agent = Agent(request.provider, request.model)
         provider_name = request.provider or config.get('providers', {}).get('default', 'openai')
-        
+
         logger.info(f"Using AI provider: {provider_name}")
-        
+
         # Process question using agent
         answer = await agent.process_question(request.question, search)
-        
+
         logger.info(f"Request completed successfully using model: {agent.model or agent.provider.get_model()}")
         return SearchResponse(
             answer=answer,
@@ -162,7 +162,7 @@ async def search_endpoint(
             provider=provider_name,
             model=agent.model or agent.provider.get_model()
         )
-        
+
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}", exc_info=True)
         raise HTTPException(

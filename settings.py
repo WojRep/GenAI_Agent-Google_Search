@@ -14,7 +14,7 @@ class Settings(BaseModel):
     # API Settings
     api_key_name: str = os.getenv("API_KEY_NAME", "X-Auth-Token")
     api_key: str = os.getenv("API_KEY", "")
-    
+
     class Config:
         validate_assignment = True
 

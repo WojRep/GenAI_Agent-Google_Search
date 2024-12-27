@@ -29,11 +29,11 @@ class CredentialsManager:
     def get_credentials(self, provider: str) -> Dict[str, str]:
         """Get credentials for specific provider"""
         return self._credentials.get(provider, {})
-    
+
     def get_credential(self, provider: str, key: str) -> str:
         """Get specific credential for provider"""
         return self._credentials.get(provider, {}).get(key, '')
-    
+
     def has_required_credentials(self, provider: str) -> bool:
         """Check if all required credentials for a provider are non-empty"""
         creds = self._credentials.get(provider, {})
@@ -53,7 +53,7 @@ class CredentialsManager:
 
     def get_available_providers(self) -> Dict[str, bool]:
         """Get list of all providers and their availability status"""
-        return {provider: self.has_required_credentials(provider) 
+        return {provider: self.has_required_credentials(provider)
                 for provider in self._credentials.keys()}
 
 @lru_cache()
